@@ -1,9 +1,9 @@
 services:
-    sm_manager:
-        build:
-            context: ./sm_manager
-        ports:
-            - 8000:8000
+    # sm_manager:
+    #     build:
+    #         context: ./sm_manager
+    #     ports:
+    #         - 8000:8000
     mpc_node_0:
         build:
             context: ./mpc_node_0
@@ -20,19 +20,19 @@ services:
                   path: ./mpc_node_0/node/package.json
         # volumes:
         #     - ./:/app
-    mpc_node_1:
-        build:
-            context: ./mpc_node_1
-        ports:
-            - 6001:6001
-        develop:
-            watch:
-                - action: sync
-                  path: ./mpc_node_0/node
-                  target: /app
-                  ignore:
-                      - ./mpc_node_0/node/node_modules/
-                - action: rebuild
-                  path: ./mpc_node_0/node/package.json
-        # volumes:
-        #     - ./:/app
+    # mpc_node_1:
+    #     build:
+    #         context: ./mpc_node_1
+    #     ports:
+    #         - 6001:6001
+    #     develop:
+    #         watch:
+    #             - action: sync
+    #               path: ./mpc_node_0/node
+    #               target: /app
+    #               ignore:
+    #                   - ./mpc_node_0/node/node_modules/
+    #             - action: rebuild
+    #               path: ./mpc_node_0/node/package.json
+    #     # volumes:
+    #     #     - ./:/app
