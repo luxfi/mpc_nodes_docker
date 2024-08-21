@@ -1,12 +1,19 @@
 services:
-    # sm_manager:
-    #     build:
-    #         context: ./sm_manager
-    #     ports:
-    #         - 8000:8000
+    sm_manager:
+        build:
+            context: ./sm_manager
+        ports:
+            - 8000:8000
     mpc_node_0:
         build:
             context: ./mpc_node_0
+        environment:
+            - NODE_ENV=production
+            - smTimeOutBound=20
+            - sign_client_name=gg18_sign_client
+            - node_number=0
+            - sign_sm_manager=http://127.0.0.1:8000
+            - PORT=6000
         ports:
             - 6000:6000
         develop:
@@ -20,19 +27,26 @@ services:
                   path: ./mpc_node_0/node/package.json
         # volumes:
         #     - ./:/app
-    # mpc_node_1:
-    #     build:
-    #         context: ./mpc_node_1
-    #     ports:
-    #         - 6001:6001
-    #     develop:
-    #         watch:
-    #             - action: sync
-    #               path: ./mpc_node_0/node
-    #               target: /app
-    #               ignore:
-    #                   - ./mpc_node_0/node/node_modules/
-    #             - action: rebuild
-    #               path: ./mpc_node_0/node/package.json
-    #     # volumes:
-    #     #     - ./:/app
+    mpc_node_1:
+        build:
+            context: ./mpc_node_1
+        environment:
+            - NODE_ENV=production
+            - smTimeOutBound=20
+            - sign_client_name=gg18_sign_client
+            - node_number=1
+            - sign_sm_manager=http://127.0.0.1:8000
+            - PORT=6001
+        ports:
+            - 6001:6001
+        develop:
+            watch:
+                - action: sync
+                  path: ./mpc_node_0/node
+                  target: /app
+                  ignore:
+                      - ./mpc_node_0/node/node_modules/
+                - action: rebuild
+                  path: ./mpc_node_0/node/package.json
+        # volumes:
+        #     - ./:/app

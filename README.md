@@ -18,6 +18,15 @@ Install docker on your computer.
 
 Run project.
 
+You need to generate mpc key shares keys1.store, keys2.store, keys3.store before starting this project.
+
+## To generate key shares, please visit: 
+https://github.com/luxfi/multi-party-ecdsa
+
+copy keys1.store file to mpc_node_0/multiparty_ecdsa/keys.store
+copy keys2.store file to mpc_node_0/multiparty_ecdsa/keys.store
+copy keys3.store file to mpc_node_0/multiparty_ecdsa/keys.store
+
 ```
 docker compose up -d
 ```
