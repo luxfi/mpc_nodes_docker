@@ -11,12 +11,10 @@ const exec = promisify(childExec)
 dotenv.config()
 
 const signClientName = process.env.sign_client_name
-
+const signSmManager = process.env.sign_sm_manager
 /* SM Manager Timeout Params */
 // const smTimeOutBound = (Number(settings.SMTimeout) * 100 * Math.random()) % 60 //0.5
 const smTimeOutBound = Number(process.env.smTimeOutBound)
-/* List of Signing Managers for MPC */
-const sm_managers = settings.SigningManagers
 /** key share for this node */
 const keyStore = settings.KeyStore
 
@@ -38,7 +36,7 @@ export const signClient = async (i: number, msgHash: string, txInfo: string[]) =
       const [txid, fromNetId, toNetIdHash, tokenName, tokenAddrHash, toTargetAddrHash, msgSig, nonce] = txInfo
       const txidNonce = txid + nonce
 
-      const list = await find("name", `${signClientName} ${sm_managers[i]}`)
+      const list = await find("name", `${signClientName} ${signSmManager}`)
       console.log("list", list);
       if (list.length > 0) {
         console.log("clientAlreadyRunning", list)
@@ -58,7 +56,7 @@ export const signClient = async (i: number, msgHash: string, txInfo: string[]) =
               console.log("SM Manager signing timeout reached")
               try {
                 await killSigner(signClientName)
-                const cmd = `./target/release/examples/${signClientName} ${sm_managers[i]} ${keyStore} ${msgHash}`
+                const cmd = `./target/release/examples/${signClientName} ${signSmManager} ${keyStore} ${msgHash}`
                 const outKill = await exec(cmd, { cwd: __dirname + "/multiparty", shell: '/bin/bash' }) // Make sure it"s dead
               } catch (err) {
                 console.log("Partial signature process may not have exited:", err)
@@ -86,8 +84,8 @@ export const signClient = async (i: number, msgHash: string, txInfo: string[]) =
         console.log("About to message signers...")
         try {
           //Invoke client signer
-          console.log("sm_managers[i]", sm_managers[i], i)
-          const cmd = `./target/release/examples/${signClientName} ${sm_managers[i]} ${keyStore} ${msgHash}`
+          console.log("signSmManager", signSmManager, i)
+          const cmd = `./target/release/examples/${signClientName} ${signSmManager} ${keyStore} ${msgHash}`
           console.log("command: ", cmd)
           const out = await exec(cmd, { cwd: __dirname + "/multiparty" }) // Make sure it"s dead
           const { stdout, stderr } = out
