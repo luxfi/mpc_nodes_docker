@@ -135,6 +135,11 @@ async fn main() {
     }
     /////////////////////////////////////////////////////////////////
     rocket::build()
+        .configure(rocket::Config {
+            address: "0.0.0.0".parse().unwrap(),
+            port: 8000,
+            ..Default::default()
+        })
         .mount("/", routes![get, set, signup_keygen, signup_sign])
         .manage(db_mtx)
         .launch()

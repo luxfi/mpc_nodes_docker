@@ -30,7 +30,7 @@ RUN npm run build
 # Copy the built Rust binary from the builder stage  
 COPY --from=rust_builder /app/. ./dist/multiparty
 
-EXPOSE 6002
+EXPOSE 6000
 
 # Command to run the application (adjust as necessary)  
 CMD ["node", "dist/node.js"]

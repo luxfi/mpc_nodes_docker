@@ -11,21 +11,19 @@ const exec = promisify(childExec)
 dotenv.config()
 
 const signClientName = process.env.sign_client_name
-
+const signSmManager = process.env.sign_sm_manager
 /* SM Manager Timeout Params */
 // const smTimeOutBound = (Number(settings.SMTimeout) * 100 * Math.random()) % 60 //0.5
 const smTimeOutBound = Number(process.env.smTimeOutBound)
-/* List of Signing Managers for MPC */
-const sm_managers = settings.SigningManagers
 /** key share for this node */
 const keyStore = settings.KeyStore
 
 const killSigner = async (signerProc: string) => {
   try {
-    // console.log("Killing Signer..")
+    console.log("Killing Signer..")
     const cmd = "killall -9 " + signerProc.toString()
     const out = await exec(cmd)
-    // console.log("Signer dead...", out)
+    console.log("Signer dead...", out)
   } catch (e) {
     console.log("Signer process already dead:", e)
   }
@@ -38,7 +36,7 @@ export const signClient = async (i: number, msgHash: string, txInfo: string[]) =
       const [txid, fromNetId, toNetIdHash, tokenName, tokenAddrHash, toTargetAddrHash, msgSig, nonce] = txInfo
       const txidNonce = txid + nonce
 
-      const list = await find("name", `${signClientName} ${sm_managers[i]}`)
+      const list = await find("name", `${signClientName} ${signSmManager}`)
       console.log("list", list);
       if (list.length > 0) {
         console.log("clientAlreadyRunning", list)
@@ -51,14 +49,14 @@ export const signClient = async (i: number, msgHash: string, txInfo: string[]) =
 
           if (upStdout) {
             const up = upStdout.split("\n")[1].trim().split(":")
-            // console.log("upStdout:", up, "Time Bound:", smTimeOutBound)
+            console.log("upStdout:", up, "Time Bound:", smTimeOutBound)
             const upStdoutArr = up
             // SM Manager timed out
-            if (Number(upStdoutArr[upStdoutArr.length - 1]) + Number(upStdoutArr[upStdoutArr.length - 2]) * 60 >= smTimeOutBound) {
+            if (Number(upStdoutArr[1]) >= smTimeOutBound) {
               console.log("SM Manager signing timeout reached")
               try {
                 await killSigner(signClientName)
-                const cmd = `./target/release/examples/${signClientName} ${sm_managers[i]} ${keyStore} ${msgHash}`
+                const cmd = `./target/release/examples/${signClientName} ${signSmManager} ${keyStore} ${msgHash}`
                 const outKill = await exec(cmd, { cwd: __dirname + "/multiparty", shell: '/bin/bash' }) // Make sure it"s dead
               } catch (err) {
                 console.log("Partial signature process may not have exited:", err)
@@ -86,8 +84,8 @@ export const signClient = async (i: number, msgHash: string, txInfo: string[]) =
         console.log("About to message signers...")
         try {
           //Invoke client signer
-          console.log("sm_managers[i]", sm_managers[i], i)
-          const cmd = `./target/release/examples/${signClientName} ${sm_managers[i]} ${keyStore} ${msgHash}`
+          console.log("signSmManager", signSmManager, i)
+          const cmd = `./target/release/examples/${signClientName} ${signSmManager} ${keyStore} ${msgHash}`
           console.log("command: ", cmd)
           const out = await exec(cmd, { cwd: __dirname + "/multiparty" }) // Make sure it"s dead
           const { stdout, stderr } = out
