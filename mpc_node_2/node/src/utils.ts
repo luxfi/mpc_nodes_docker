@@ -21,7 +21,7 @@ const keyStore = settings.KeyStore
 const killSigner = async (signerProc: string) => {
   try {
     console.log("Killing Signer..")
-    const cmd = "killall -9 " + signerProc.toString()
+    const cmd = "kill -9 " + signerProc
     const out = await exec(cmd)
     console.log("Signer dead...", out)
   } catch (e) {
@@ -35,7 +35,6 @@ export const signClient = async (i: number, msgHash: string, txInfo: string[]) =
       console.log("========================================================= In Sign Client ============================================================")
       const [txid, fromNetId, toNetIdHash, tokenName, tokenAddrHash, toTargetAddrHash, msgSig, nonce] = txInfo
       const txidNonce = txid + nonce
-
       const list = await find("name", `${signClientName} ${signSmManager}`)
       console.log("list", list);
       if (list.length > 0) {
@@ -52,12 +51,15 @@ export const signClient = async (i: number, msgHash: string, txInfo: string[]) =
             console.log("upStdout:", up, "Time Bound:", smTimeOutBound)
             const upStdoutArr = up
             // SM Manager timed out
-            if (Number(upStdoutArr[1]) >= smTimeOutBound) {
+            if (Number(upStdoutArr[upStdoutArr.length - 1]) >= smTimeOutBound) {
               console.log("SM Manager signing timeout reached")
               try {
-                await killSigner(signClientName)
+                // await killSigner(signClientName)
+                for (const p of list) {
+                  await killSigner(String(p.pid))
+                }
                 const cmd = `./target/release/examples/${signClientName} ${signSmManager} ${keyStore} ${msgHash}`
-                const outKill = await exec(cmd, { cwd: __dirname + "/multiparty", shell: '/bin/bash' }) // Make sure it"s dead
+                await exec(cmd, { cwd: __dirname + "/multiparty", shell: '/bin/bash' }) // Make sure it"s dead
               } catch (err) {
                 console.log("Partial signature process may not have exited:", err)
                 resolve(signClient(i, msgHash, txInfo))

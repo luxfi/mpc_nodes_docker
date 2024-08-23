@@ -202,9 +202,14 @@ app.get(
         }
       }
       // To prove user signed we recover signer for (msg, sig) using testSig which rtrns address which must == toTargetAddr or return error
-      const signerAddress = w3From.eth.accounts.recover(msg, msgSig) //best  on server
-      // console.log("signerAddress:", signerAddress.toString().toLowerCase(), "From Address:", from.toString().toLowerCase())
-
+      let signerAddress = ""
+      try {
+        signerAddress = w3From.eth.accounts.recover(msg, msgSig) //best  on server
+      } catch (err) {
+        console.log("cannt recover signer from msgSig")
+        return res.status(400).json("cannt recover signer from msgSig")
+      }
+      console.log("signerAddress:", signerAddress.toString().toLowerCase(), "From Address:", from.toString().toLowerCase())
       // Bad signer (test transaction signer must be same as burn transaction signer) => exit, front run attempt
       let signerOk = false
       if (signerAddress.toString().toLowerCase() != from.toString().toLowerCase()) {

@@ -11,7 +11,7 @@ services:
             context: ./mpc_node_0
         environment:
             - NODE_ENV=production
-            - smTimeOutBound=2
+            - smTimeOutBound=5
             - sign_client_name=gg18_sign_client
             - node_number=0
             - sign_sm_manager=http://sm_manager:8000/

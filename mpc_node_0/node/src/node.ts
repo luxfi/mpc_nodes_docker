@@ -75,182 +75,183 @@ app.get("/", async (req: express.Request, res: express.Response) => {
 app.get(
   "/api/v1/getsig/txid/:txid/fromNetId/:fromNetId/toNetIdHash/:toNetIdHash/tokenName/:tokenName/tokenAddrHash/:tokenAddrHash/msgSig/:msgSig/toTargetAddrHash/:toTargetAddrHash/nonce/:nonce",
   async (req: express.Request, res: express.Response) => {
-    try {
-      // Checking inputs
-      const stealthMode = true // Stealth overrride by default, for now.
-      let sig: string = ""
-      let evmTxHash: string = ""
-      let output: any = null
+    // Checking inputs
+    const stealthMode = true // Stealth overrride by default, for now.
+    let sig: string = ""
+    let evmTxHash: string = ""
+    let output: any = null
 
-      const txid = req.params.txid.trim()
-      if (!(txid.length > 0) && !txid.match(Exp)) {
-        output = "NullTransactionError: bad transaction hash"
-        return res.send(output)
-      }
+    const txid = req.params.txid.trim()
+    if (!(txid.length > 0) && !txid.match(Exp)) {
+      output = "NullTransactionError: bad transaction hash"
+      return res.send(output)
+    }
 
-      // Dupelist reset if time has elapsed.
-      const dupeStop = new Date() //time now
-      if ((Number(dupeStop) - dupeStart) / 1000 >= 2400) {
-        dupeList = new Map() //Clear dupeList
-        dupeStart = new Date().getTime()
-      }
+    // Dupelist reset if time has elapsed.
+    const dupeStop = new Date() //time now
+    if ((Number(dupeStop) - dupeStart) / 1000 >= 2400) {
+      dupeList = new Map() //Clear dupeList
+      dupeStart = new Date().getTime()
+    }
 
-      // Limit on checks here, else you go into graylist.
-      if (dupeList.get(txid.toString()) == undefined) {
-        //First time
-        dupeList.set(txid.toString(), 0) // init
-      } else {
-        if (dupeList.get(txid.toString()) >= dupeListLimit) {
-          // temp blacklist - pm2 cron will reset graylist after 12hrs
-          console.log("Dupe transaction request limit hit")
-          output = "DupeTransactionError: Too many transaction requests. Try back later."
-          res.send(output)
-          return
-        }
-        dupeList.set(txid.toString(), dupeList.get(txid.toString()) + 1)
-      }
-
-      const fromNetId = req.params.fromNetId.trim()
-      console.log("fromNetId:", fromNetId)
-      if (!fromNetId) {
-        output = "NullFromNetIDError: No from netId sent."
+    // Limit on checks here, else you go into graylist.
+    if (dupeList.get(txid.toString()) == undefined) {
+      //First time
+      dupeList.set(txid.toString(), 0) // init
+    } else {
+      if (dupeList.get(txid.toString()) >= dupeListLimit) {
+        // temp blacklist - pm2 cron will reset graylist after 12hrs
+        console.log("Dupe transaction request limit hit")
+        output = "DupeTransactionError: Too many transaction requests. Try back later."
         res.send(output)
         return
       }
+      dupeList.set(txid.toString(), dupeList.get(txid.toString()) + 1)
+    }
 
-      const toNetIdHash = req.params.toNetIdHash.trim()
-      if (!toNetIdHash) {
+    const fromNetId = req.params.fromNetId.trim()
+    console.log("fromNetId:", fromNetId)
+    if (!fromNetId) {
+      output = "NullFromNetIDError: No from netId sent."
+      res.send(output)
+      return
+    }
+
+    const toNetIdHash = req.params.toNetIdHash.trim()
+    if (!toNetIdHash) {
+      output = "NullToNetIDHashError: No to netId sent."
+      res.send(output)
+      return
+    }
+
+    const tokenName = req.params.tokenName.trim()
+    if (!tokenName) {
+      output = "NullTokenNameError: No token name sent."
+      res.send(output)
+      return
+    }
+
+    const tokenAddrHash = req.params.tokenAddrHash.trim()
+    console.log("TokenAddrHash:", tokenAddrHash)
+    if (!tokenAddrHash) {
+      output = "NullTokenAddressHashError: No token address hash sent."
+      res.send(output)
+      return
+    }
+
+    let toTargetAddrHash = req.params.toTargetAddrHash.trim()
+    if (!toTargetAddrHash) {
+      output = "NullToTargetAddrHashError: No target address hash sent."
+      res.send(output)
+      return
+    }
+
+    const msgSig = req.params.msgSig.trim()
+    if (!msgSig) {
+      output = "NullMessageSignatureError: Challenge message signature not sent."
+      res.send(output)
+      return
+    }
+
+    const nonce = req.params.nonce.trim()
+    if (!nonce) {
+      output = "NullNonceError: No nonce sent."
+      res.send(output)
+      return
+    }
+
+    const fromNetArr = getNetworkAddresses(Number(fromNetId), tokenName)
+    // console.log("fromNetArr:", fromNetArr)
+    evmTxHash = Web3.utils.soliditySha3(txid)
+    const txidNonce = stealthMode ? evmTxHash + nonce : txid + nonce
+    const txStub = stealthMode ? evmTxHash : txid
+    const txInfo = [txStub, fromNetId, toNetIdHash, tokenName, tokenAddrHash, toTargetAddrHash, msgSig, nonce]
+    // console.log("txidNonce:", txidNonce)
+    // console.log("txProcMapX:", txProcMap.get(txidNonce.toString()), "TX MAP:", txProcMap)
+
+    if (fromNetArr.length !== 3) {
+      console.log("FromNetArrLengthError:", fromNetArr.length)
+      output = "Unknown error occurred."
+      res.send(output)
+      return
+    }
+    const fromTokenConAddr: string = fromNetArr[0]
+    const frombridgeConAddr: string = fromNetArr[2]
+    const w3From: Web3<RegisteredSubscription> = fromNetArr[1]
+    const cnt = 0
+
+    const transaction = await getEVMTx(txid, w3From)
+    if (!transaction) {
+      output = { error: "NullTransactionError: bad transaction hash, no transaction on chain" }
+      res.send(output)
+      return
+    } else {
+      console.log("Transaction:", transaction)
+      const { contractTo: contract, from, addressTo: fromTokenContract, value: amt, log: eventName } = transaction
+      let vault = false
+      if (!eventName) {
+        output = "NotVaultedOrBurnedError: No tokens were vaulted or burned."
+        res.send(output)
+        return
+      } else {
+        console.log("Event:", eventName)
+        if (eventName.toString() === "BridgeBurned") {
+          vault = false
+        } else if (eventName.toString() === "VaultDeposit") {
+          vault = true
+        }
+      }
+      // To prove user signed we recover signer for (msg, sig) using testSig which rtrns address which must == toTargetAddr or return error
+      let signerAddress = ""
+      try {
+        signerAddress = w3From.eth.accounts.recover(msg, msgSig) //best  on server
+      } catch (err) {
+        console.log("cannt recover signer from msgSig")
+        return res.status(400).json("cannt recover signer from msgSig")
+      }
+      console.log("signerAddress:", signerAddress.toString().toLowerCase(), "From Address:", from.toString().toLowerCase())
+      // Bad signer (test transaction signer must be same as burn transaction signer) => exit, front run attempt
+      let signerOk = false
+      if (signerAddress.toString().toLowerCase() != from.toString().toLowerCase()) {
+        console.log("*** Possible front run attempt, message signer not transaction sender ***")
         output = "NullToNetIDHashError: No to netId sent."
         res.send(output)
         return
-      }
-
-      const tokenName = req.params.tokenName.trim()
-      if (!tokenName) {
-        output = "NullTokenNameError: No token name sent."
-        res.send(output)
-        return
-      }
-
-      const tokenAddrHash = req.params.tokenAddrHash.trim()
-      console.log("TokenAddrHash:", tokenAddrHash)
-      if (!tokenAddrHash) {
-        output = "NullTokenAddressHashError: No token address hash sent."
-        res.send(output)
-        return
-      }
-
-      let toTargetAddrHash = req.params.toTargetAddrHash.trim()
-      if (!toTargetAddrHash) {
-        output = "NullToTargetAddrHashError: No target address hash sent."
-        res.send(output)
-        return
-      }
-
-      const msgSig = req.params.msgSig.trim()
-      if (!msgSig) {
-        output = "NullMessageSignatureError: Challenge message signature not sent."
-        res.send(output)
-        return
-      }
-
-      const nonce = req.params.nonce.trim()
-      if (!nonce) {
-        output = "NullNonceError: No nonce sent."
-        res.send(output)
-        return
-      }
-
-      const fromNetArr = getNetworkAddresses(Number(fromNetId), tokenName)
-      // console.log("fromNetArr:", fromNetArr)
-      evmTxHash = Web3.utils.soliditySha3(txid)
-      const txidNonce = stealthMode ? evmTxHash + nonce : txid + nonce
-      const txStub = stealthMode ? evmTxHash : txid
-      const txInfo = [txStub, fromNetId, toNetIdHash, tokenName, tokenAddrHash, toTargetAddrHash, msgSig, nonce]
-      // console.log("txidNonce:", txidNonce)
-      // console.log("txProcMapX:", txProcMap.get(txidNonce.toString()), "TX MAP:", txProcMap)
-
-      if (fromNetArr.length !== 3) {
-        console.log("FromNetArrLengthError:", fromNetArr.length)
-        output = "Unknown error occurred."
-        res.send(output)
-        return
-      }
-      const fromTokenConAddr: string = fromNetArr[0]
-      const frombridgeConAddr: string = fromNetArr[2]
-      const w3From: Web3<RegisteredSubscription> = fromNetArr[1]
-      const cnt = 0
-
-      const transaction = await getEVMTx(txid, w3From)
-      if (!transaction) {
-        output = { error: "NullTransactionError: bad transaction hash, no transaction on chain" }
-        res.send(output)
-        return
       } else {
-        console.log("Transaction:", transaction)
-        const { contractTo: contract, from, addressTo: fromTokenContract, value: amt, log: eventName } = transaction
-        let vault = false
-        if (!eventName) {
-          output = "NotVaultedOrBurnedError: No tokens were vaulted or burned."
-          res.send(output)
-          return
-        } else {
-          console.log("Event:", eventName)
-          if (eventName.toString() === "BridgeBurned") {
-            vault = false
-          } else if (eventName.toString() === "VaultDeposit") {
-            vault = true
-          }
-        }
-        // To prove user signed we recover signer for (msg, sig) using testSig which rtrns address which must == toTargetAddr or return error
-        const signerAddress = w3From.eth.accounts.recover(msg, msgSig) //best  on server
-        // console.log("signerAddress:", signerAddress.toString().toLowerCase(), "From Address:", from.toString().toLowerCase())
+        signerOk = true
+      }
 
-        // Bad signer (test transaction signer must be same as burn transaction signer) => exit, front run attempt
-        let signerOk = false
-        if (signerAddress.toString().toLowerCase() != from.toString().toLowerCase()) {
-          console.log("*** Possible front run attempt, message signer not transaction sender ***")
-          output = "NullToNetIDHashError: No to netId sent."
-          res.send(output)
-          return
-        } else {
-          signerOk = true
-        }
-
-        // If signerOk we use the toTargetAddrHash provided, else we hash the from address.
-        toTargetAddrHash = signerOk ? toTargetAddrHash : Web3.utils.keccak256(from)
-        // console.log("token contract:", fromTokenContract.toLowerCase(), "fromTokenConAddr", fromTokenConAddr.toLowerCase(), "contract", contract.toLowerCase(), "frombridgeConAddr", frombridgeConAddr.toLowerCase())
-        // Token was burned.
-        if (fromTokenContract.toLowerCase() === fromTokenConAddr.toLowerCase() && contract.toLowerCase() === frombridgeConAddr.toLowerCase()) {
-          // console.log("fromTokenConAddr", fromTokenConAddr, "tokenAddrHash", tokenAddrHash)
-          //Produce signature for minting approval.
-          try {
-            sig = (await hashAndSignTx(w3From.utils.toWei(amt.toString(), "ether"), w3From, vault, txInfo)) as string
-            //NOTE: For private transactions, store only the sig.
-            output = { fromTokenContractAddress: fromTokenContract, contract: contract, from: toTargetAddrHash, tokenAmt: amt, signature: sig, hashedTxId: txid, tokenAddrHash: tokenAddrHash, vault: vault }
-            return res.send(output)
-          } catch (err) {
-            if (err === "AlreadyMintedError") {
-              console.log(err)
-              output = { error: err + " It appears these coins were already bridged." }
-            } else if (err === "GasTooLowError") {
-              console.log(err)
-              output = { error: err + " Try setting higher gas prices. Do you have enough tokens to pay for fees?" }
-            } else {
-              console.log(err)
-              output = { error: err }
-            }
-            res.json(output)
-            return
+      // If signerOk we use the toTargetAddrHash provided, else we hash the from address.
+      toTargetAddrHash = signerOk ? toTargetAddrHash : Web3.utils.keccak256(from)
+      // console.log("token contract:", fromTokenContract.toLowerCase(), "fromTokenConAddr", fromTokenConAddr.toLowerCase(), "contract", contract.toLowerCase(), "frombridgeConAddr", frombridgeConAddr.toLowerCase())
+      // Token was burned.
+      if (fromTokenContract.toLowerCase() === fromTokenConAddr.toLowerCase() && contract.toLowerCase() === frombridgeConAddr.toLowerCase()) {
+        // console.log("fromTokenConAddr", fromTokenConAddr, "tokenAddrHash", tokenAddrHash)
+        //Produce signature for minting approval.
+        try {
+          sig = (await hashAndSignTx(w3From.utils.toWei(amt.toString(), "ether"), w3From, vault, txInfo)) as string
+          //NOTE: For private transactions, store only the sig.
+          output = { fromTokenContractAddress: fromTokenContract, contract: contract, from: toTargetAddrHash, tokenAmt: amt, signature: sig, hashedTxId: txid, tokenAddrHash: tokenAddrHash, vault: vault }
+          return res.send(output)
+        } catch (err) {
+          if (err === "AlreadyMintedError") {
+            console.log(err)
+            output = { error: err + " It appears these coins were already bridged." }
+          } else if (err === "GasTooLowError") {
+            console.log(err)
+            output = { error: err + " Try setting higher gas prices. Do you have enough tokens to pay for fees?" }
+          } else {
+            console.log(err)
+            output = { error: err }
           }
-        } else {
-          output = { error: "ContractMisMatchError: bad token or bridge contract address." }
           res.json(output)
           return
         }
+      } else {
+        output = { error: "ContractMisMatchError: bad token or bridge contract address." }
+        res.json(output)
+        return
       }
-    } catch (err) {
-      res.json("error")
     }
   }
 )
