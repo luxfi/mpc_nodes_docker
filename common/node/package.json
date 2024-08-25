@@ -11,6 +11,7 @@
     "start": "ts-node-dev src/node.ts",
     "build": "tsc && tsc-alias",
     "server": "node dist/node.js",
+    "keygen": "cd dist/multiparty && ./target/release/examples/gg18_keygen_client http://sm-manager:8000 keys.store",
     "production": "set PORT=80&&set ENVIRONMENT=PRODUCTION&&ts-node src/node.ts",
     "lint": "eslint src/**/*.ts",
     "format": "eslint src/**/*.ts --fix",

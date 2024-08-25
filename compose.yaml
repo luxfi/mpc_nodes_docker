@@ -1,7 +1,8 @@
 services:
     sm-manager:
         build:
-            context: ./sm-manager
+            context: .
+            dockerfile: ./services/sm-manager
         ports:
             - 8000:8000
         networks:
@@ -12,7 +13,8 @@ services:
                 condition: on-failure
     mpc-node-0:
         build:
-            context: ./mpc-node
+            context: .
+            dockerfile: ./services/mpc-node-0
         environment:
             - NODE_ENV=production
             - smTimeOutBound=3
