@@ -12,7 +12,7 @@ services:
                 condition: on-failure
     mpc-node-0:
         build:
-            context: ./mpc-node-0
+            context: ./mpc-node
         environment:
             - NODE_ENV=production
             - smTimeOutBound=3
