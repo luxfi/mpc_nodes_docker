@@ -1,39 +1,52 @@
 services:
-    sm_manager:
+    sm-manager:
         build:
-            context: ./sm_manager
+            context: ./sm-manager
         ports:
             - 8000:8000
         networks:
-            - lux_network
-    mpc_node_0:
+            - lux-network
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+    mpc-node-0:
         build:
-            context: ./mpc_node_0
+            context: ./mpc-node-0
         environment:
             - NODE_ENV=production
             - smTimeOutBound=3
             - sign_client_name=gg18_sign_client
             - node_number=0
-            - sign_sm_manager=http://sm_manager:8000/
+            - sign_sm_manager=http://sm-manager:8000/
             - PORT=6000
         ports:
             - 6000:6000
         networks:
-            - lux_network
-    mpc_node_1:
-        build:
-            context: ./mpc_node_1
-        environment:
-            - NODE_ENV=production
-            - smTimeOutBound=3
-            - sign_client_name=gg18_sign_client
-            - node_number=1
-            - sign_sm_manager=http://sm_manager:8000/
-            - PORT=6001
-        ports:
-            - 6001:6001
-        networks:
-            - lux_network
+            - lux-network
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+    # mpc-node-1:
+    #     build:
+    #         context: ./mpc-node-1
+    #     environment:
+    #         - NODE_ENV=production
+    #         - smTimeOutBound=3
+    #         - sign_client_name=gg18_sign_client
+    #         - node_number=1
+    #         - sign_sm_manager=http://sm-manager:8000/
+    #         - PORT=6001
+    #     ports:
+    #         - 6001:6001
+    #     networks:
+    #         - lux-network
+    #     deploy:
+    #         replicas: 1
+    #         restart_policy:
+    #             condition: on-failure
+
 networks:
-    lux_network:
+    lux-network:
         driver: bridge
