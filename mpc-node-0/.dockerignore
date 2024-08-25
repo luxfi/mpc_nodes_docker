@@ -1,2 +1,3 @@
 node/node_modules
 multiparty_ecdsa/target
+multiparty_ecdsa/keys*.store
