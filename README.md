@@ -35,7 +35,9 @@ Once project is running successfully on Docker, generate key shares in each cont
 Open bash from all the containers
 ```
 docker compose exec mpc-node-0 /bin/bash
+```
 docker compose exec mpc-node-1 /bin/bash
+```
 docker compose exec mpc-node-2 /bin/bash
 ```
 and run following command in each bash window to generate key shares
