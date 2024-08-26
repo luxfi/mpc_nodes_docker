@@ -51,4 +51,9 @@ convert compose.yaml using kompose command
 ```
 kompose convert -f compose.yaml -o k8s/
 ```
-
+```
+kubectl apply -f ./k8s
+```
+```
+kompose get all
+```
