@@ -36,7 +36,9 @@ Open bash from all the containers
 ```
 docker compose exec mpc-node-0 /bin/bash
 ```
+```
 docker compose exec mpc-node-1 /bin/bash
+```
 ```
 docker compose exec mpc-node-2 /bin/bash
 ```
