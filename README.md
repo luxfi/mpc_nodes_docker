@@ -49,6 +49,6 @@ npm run keygen
 ## K8 running
 convert compose.yaml using kompose command
 ```
-kompose convert -f docker-compose.yml -o k8s/
+kompose convert -f compose.yaml -o k8s/
 ```
 
