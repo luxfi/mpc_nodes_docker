@@ -17,23 +17,34 @@ git clone https://github.com/luxfi/mpc_nodes_docker
 
 Install docker on your computer.
 
+Build project.
+```
+docker compose build
+```
 Run project.
-
-You need to generate mpc key shares keys1.store, keys2.store, keys3.store before starting this project.
-
-## To generate key shares, please visit: 
-https://github.com/luxfi/multi-party-ecdsa
-
-copy keys1.store file to mpc_node_0/multiparty_ecdsa/keys.store
-copy keys2.store file to mpc_node_0/multiparty_ecdsa/keys.store
-copy keys3.store file to mpc_node_0/multiparty_ecdsa/keys.store
-
 ```
 docker compose up -d
 ```
-
 Stop process
 
 ```
 docker compose down
 ```
+## Key generation
+Once project is running successfully on Docker, generate key shares in each containers.
+Open bash from all the containers
+```
+docker compose exec mpc-node-0 /bin/bash
+docker compose exec mpc-node-1 /bin/bash
+docker compose exec mpc-node-2 /bin/bash
+```
+and run following command in each bash window to generate key shares
+```
+npm run keygen
+```
+## K8 running
+convert compose.yaml using kompose command
+```
+kompose convert -f docker-compose.yml -o k8s/
+```
+
