@@ -54,6 +54,28 @@ kompose convert -f compose.yaml -o k8s/
 ```
 kubectl apply -f ./k8s
 ```
+# Show current k8 pods and services
 ```
-kompose get all
+kubectl get pods
+```
+```
+kompose get services
+```
+# In local environment, forward your local port 8080 to the service's 8080 port
+```
+kubectl port-forward service/server 8080:8080
+```
+# Run a command inside a running pod in a Kubernetes cluster.
+```
+kubectl exec -it mpc-node-0 -- /bin/bash
+```
+```
+kubectl exec -it mpc-node-1 -- /bin/bash
+```
+```
+kubectl exec -it mpc-node-1 -- /bin/bash
+```
+# Run key generation command in each clustuer
+```
+npm run keygen
 ```
